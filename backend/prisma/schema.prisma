@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Enums are not supported in SQLite, so we use String
+// Roles: STUDENT, LECTURER, ADMIN
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  role           String   @default("STUDENT")
+  name           String
+  department     String?
+  isVerified     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Lecturer specific relations
+  availabilities LecturerAvailability[]
+  exceptions     AvailabilityException[]
+  
+  // Appointments
+  appointmentsAsStudent   Appointment[] @relation("StudentAppointments")
+  appointmentsAsLecturer  Appointment[] @relation("LecturerAppointments")
+}
+
+model LecturerAvailability {
+  id         String   @id @default(uuid())
+  lecturerId String
+  lecturer   User     @relation(fields: [lecturerId], references: [id])
+  dayOfWeek  Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime  String   // HH:mm (e.g., 09:00)
+  endTime    String   // HH:mm (e.g., 12:00)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AvailabilityException {
+  id         String   @id @default(uuid())
+  lecturerId String
+  lecturer   User     @relation(fields: [lecturerId], references: [id])
+  date       DateTime // Specific date of exception
+  isAvailable Boolean @default(false) // false means off, true means extra availability
+  startTime  String?  // HH:mm
+  endTime    String?  // HH:mm
+  reason     String?
+  createdAt  DateTime @default(now())
+}
+
+// AppointmentStatus: PENDING, APPROVED, DECLINED, RESCHEDULED
+
+model Appointment {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     User     @relation("StudentAppointments", fields: [studentId], references: [id])
+  lecturerId  String
+  lecturer    User     @relation("LecturerAppointments", fields: [lecturerId], references: [id])
+  date        DateTime
+  startTime   String   // HH:mm
+  endTime     String   // HH:mm
+  purpose     String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([lecturerId, date, startTime]) // Prevent double booking at the database level for a lecturer
+}
