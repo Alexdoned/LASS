@@ -13,10 +13,10 @@ const fetchLecturerAppointments = async () => {
 const LecturerDashboard = () => {
   const queryClient = useQueryClient();
 
-  const { data: appointments, isLoading } = useQuery({
+  const { data: appointments, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['lecturerAppointments'],
     queryFn: fetchLecturerAppointments,
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for better responsiveness
   });
 
   const updateStatusMutation = useMutation({
@@ -33,7 +33,11 @@ const LecturerDashboard = () => {
     }
   });
 
-  if (isLoading) return <div className="p-8 text-center text-gray-500">Loading dashboard...</div>;
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-gray-500 animate-pulse">Loading dashboard...</div>
+    </div>
+  );
 
   const pendingAppointments = appointments?.filter(a => a.status === 'PENDING') || [];
   const handledAppointments = appointments?.filter(a => a.status !== 'PENDING') || [];
@@ -44,8 +48,30 @@ const LecturerDashboard = () => {
 
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto">
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">Lecturer Dashboard</h1>
+          <p className="text-sm text-gray-500">Manage your appointment requests</p>
+        </div>
+        <button 
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className={`p-2 rounded-lg border transition-all ${isFetching ? 'bg-gray-50 text-gray-400' : 'bg-white text-primary-600 border-primary-200 hover:bg-primary-50'}`}
+        >
+          <div className={`flex items-center gap-2 ${isFetching ? 'animate-spin' : ''}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <span className="text-xs font-medium">{isFetching ? 'Refreshing...' : 'Refresh'}</span>
+          </div>
+        </button>
+      </div>
+
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Pending Requests</h2>
+        <div className="flex items-center gap-2 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Pending Requests</h2>
+          <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-yellow-200">
+            {pendingAppointments.length}
+          </span>
+        </div>
         {pendingAppointments.length === 0 ? (
           <p className="text-gray-500 bg-gray-50 p-4 rounded-lg text-center">No pending requests.</p>
         ) : (

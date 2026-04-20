@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const { getAvailableSlots } = require('../services/availabilityService');
 const { DateTime } = require('luxon');
 
+const { sendSMS } = require('../services/smsService');
 const prisma = new PrismaClient();
 
 const getLecturers = async (req, res) => {
@@ -101,6 +102,19 @@ const createAppointment = async (req, res) => {
           status: 'PENDING'
         }
       });
+
+      // 3. Fetch lecturer phone number for SMS notification
+      const lecturer = await tx.user.findUnique({
+        where: { id: lecturerId },
+        select: { phoneNumber: true, name: true }
+      });
+
+      if (lecturer?.phoneNumber) {
+        const message = `Hello ${lecturer.name}, a new appointment has been requested by a student for ${DateTime.fromJSDate(dateObj).toFormat('LLL dd')} at ${startTime}. Please login to approve/decline.`;
+        
+        // Fire and forget
+        sendSMS(lecturer.phoneNumber, message).catch(err => console.error('SMS notification failed:', err));
+      }
 
       return appointment;
     });

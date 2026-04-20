@@ -213,7 +213,10 @@ const StudentDashboard = () => {
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1">
                 <Calendar
-                  onChange={setSelectedDate}
+                  onChange={(date) => {
+                    setSelectedDate(date);
+                    setSelectedSlot(null);
+                  }}
                   value={selectedDate}
                   className="rounded-lg border-gray-200 w-full shadow-sm"
                   minDate={new Date()}
@@ -282,41 +285,93 @@ const StudentDashboard = () => {
 
       {/* Right Column: Student Timeline */}
       <div className="lg:w-1/3 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-        <h2 className="text-xl font-semibold mb-6 text-gray-800">My Appointments</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">My Appointments</h2>
+          <button 
+            onClick={() => setSelectedDate(new Date())}
+            className="text-xs text-primary-600 hover:underline font-medium"
+          >
+            Today
+          </button>
+        </div>
 
         <div className="space-y-4">
+          <div className="p-3 bg-primary-50 rounded-lg border border-primary-100 mb-4">
+            <p className="text-sm font-medium text-primary-800">
+              Selected: {DateTime.fromJSDate(selectedDate).toFormat('EEEE, MMM d')}
+            </p>
+          </div>
+
           {isLoadingAppointments ? (
             <div className="text-gray-500 text-center">Loading appointments...</div>
-          ) : myAppointments?.length === 0 ? (
-            <div className="text-gray-500 text-center text-sm p-4 bg-gray-50 rounded-lg">
-              You have no upcoming appointments.
-            </div>
           ) : (
-            myAppointments?.map(app => (
-              <div key={app.id} className="relative pl-6 pb-6 border-l-2 border-gray-200 last:border-0 last:pb-0">
-                <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white ${app.status === 'APPROVED' ? 'bg-green-500' :
-                  app.status === 'DECLINED' ? 'bg-red-500' : 'bg-yellow-500'
-                  }`}></div>
+            <>
+              {(() => {
+                const selectedDateISO = DateTime.fromJSDate(selectedDate).toISODate();
+                const filtered = myAppointments?.filter(app => 
+                  DateTime.fromISO(app.date).toISODate() === selectedDateISO
+                ) || [];
 
-                <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-gray-900">{app.lecturer.name}</h4>
-                    <span className={`text-xs px-2 py-1 rounded-full border ${statusColors[app.status]}`}>
-                      {app.status}
-                    </span>
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-gray-400 text-center text-sm p-4 border border-dashed border-gray-200 rounded-lg">
+                      No appointments on this day.
+                    </div>
+                  );
+                }
+
+                return filtered.map(app => (
+                  <div key={app.id} className="relative pl-6 pb-6 border-l-2 border-primary-200 last:border-0 last:pb-0">
+                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white ${app.status === 'APPROVED' ? 'bg-green-500' :
+                      app.status === 'DECLINED' ? 'bg-red-500' : 'bg-yellow-500'
+                      }`}></div>
+
+                    <div className="bg-white border border-gray-100 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">{app.lecturer.name}</h4>
+                        <span className={`text-xs px-2 py-1 rounded-full border ${statusColors[app.status]}`}>
+                          {app.status}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        <p className="font-medium text-gray-800">
+                          {app.startTime} - {app.endTime}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-500 italic bg-gray-50 p-2 rounded line-clamp-2">
+                        "{app.purpose}"
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    <p className="font-medium text-gray-800">
-                      {DateTime.fromISO(app.date).toFormat('MMM d, yyyy')}
-                    </p>
-                    <p>{app.startTime} - {app.endTime}</p>
-                  </div>
-                  <p className="text-sm text-gray-500 italic bg-gray-50 p-2 rounded line-clamp-2">
-                    "{app.purpose}"
-                  </p>
+                ));
+              })()}
+
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">All Upcoming</h3>
+                <div className="space-y-4">
+                  {myAppointments?.filter(app => {
+                    const selectedDateISO = DateTime.fromJSDate(selectedDate).toISODate();
+                    return DateTime.fromISO(app.date).toISODate() !== selectedDateISO;
+                  }).slice(0, 5).map(app => (
+                    <div key={app.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                      <div className={`w-2 h-2 rounded-full ${app.status === 'APPROVED' ? 'bg-green-500' :
+                        app.status === 'DECLINED' ? 'bg-red-500' : 'bg-yellow-500'
+                        }`}></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{app.lecturer.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {DateTime.fromISO(app.date).toFormat('MMM d')} • {app.startTime}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">{app.status}</span>
+                    </div>
+                  ))}
+                  {myAppointments?.length === 0 && (
+                    <div className="text-gray-500 text-center text-sm">No upcoming appointments.</div>
+                  )}
                 </div>
               </div>
-            ))
+            </>
           )}
         </div>
       </div>

@@ -10,11 +10,16 @@ const INSTITUTIONAL_DOMAIN = '@university.edu';
 
 const register = async (req, res) => {
   try {
-    const { email, password, name, role, department } = req.body;
+    const { email, password, name, role, department, phoneNumber } = req.body;
 
     // 1. Validate required fields
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+
+    // Additional validation for Lecturers: Phone number is required for SMS notifications
+    if (role === 'LECTURER' && !phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required for Lecturers to receive SMS notifications' });
     }
 
     // 2. Validate institutional email
@@ -48,8 +53,31 @@ const register = async (req, res) => {
         name,
         role: assignedRole,
         department: department || null,
+        phoneNumber: phoneNumber || null,
+        isVerified: true, // Set to true for development so users can log in immediately
       },
     });
+
+    // 5b. Auto-create 4 default slots for new Lecturers (Monday to Thursday)
+    if (assignedRole === 'LECTURER') {
+      const defaultSlots = [
+        { dayOfWeek: 1, startTime: '09:00', endTime: '11:00' },
+        { dayOfWeek: 2, startTime: '09:00', endTime: '11:00' },
+        { dayOfWeek: 3, startTime: '09:00', endTime: '11:00' },
+        { dayOfWeek: 4, startTime: '09:00', endTime: '11:00' },
+      ];
+
+      await Promise.all(
+        defaultSlots.map(slot => 
+          prisma.lecturerAvailability.create({
+            data: {
+              lecturerId: newUser.id,
+              ...slot
+            }
+          })
+        )
+      );
+    }
 
     // 6. Return success without exposing password
     res.status(201).json({
