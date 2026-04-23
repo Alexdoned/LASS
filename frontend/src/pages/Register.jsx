@@ -25,7 +25,7 @@ const Register = () => {
     setIsLoading(true);
     try {
       await api.post('/auth/register', formData);
-      toast.success('Registration successful! Please login.');
+      toast.success('Registration successful! Your account is pending admin verification.', { duration: 6000 });
       navigate('/login');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Registration failed');

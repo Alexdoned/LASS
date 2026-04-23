@@ -54,7 +54,7 @@ const register = async (req, res) => {
         role: assignedRole,
         department: department || null,
         phoneNumber: phoneNumber || null,
-        isVerified: true, // Set to true for development so users can log in immediately
+        isVerified: false, // Account must be verified by admin before login
       },
     });
 

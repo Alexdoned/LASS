@@ -37,7 +37,7 @@ function App() {
               <span className="text-sm text-gray-600 hidden sm:inline-block">
                 Welcome, <strong>{user.name}</strong> <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full ml-1">{user.role}</span>
               </span>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="bg-red-50 text-red-600 border border-red-100 px-4 py-1.5 rounded-md hover:bg-red-100 transition-colors font-medium text-sm ml-4"
               >
@@ -58,30 +58,30 @@ function App() {
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+
           <Route path="/student/*" element={
             <ProtectedRoute role="STUDENT">
               <StudentDashboard />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/lecturer/*" element={
             <ProtectedRoute role="LECTURER">
               <LecturerDashboard />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/admin/*" element={
             <ProtectedRoute role="ADMIN">
               <AdminDashboard />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/unauthorized" element={
             <div className="flex flex-col items-center justify-center min-h-[70vh]">
               <h1 className="text-4xl font-bold text-red-600 mb-4">403 - Unauthorized</h1>
               <p className="text-gray-600 mb-6">You do not have permission to view this page.</p>
-              <button 
+              <button
                 onClick={() => {
                   localStorage.removeItem('token');
                   localStorage.removeItem('user');
